@@ -82,6 +82,19 @@ pipeline {
                 }
             }
         }
+        
+        stage('Rollback Deployment') {
+            when {
+                expression { params.ROLLBACK == true }
+            }
+            steps {
+                script {
+                    echo "Rolling back deployment to previous revision"
+                    sh "kubectl rollout undo deployment/todo-app -n team-a"
+                }
+            }
+        }
+
     }
 
     post {

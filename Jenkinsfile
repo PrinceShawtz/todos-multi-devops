@@ -71,8 +71,8 @@ pipeline {
                     def imageName = "princeshawtz/todo-app:${env.BUILD_NUMBER}"
 
                     sh """
-                    kubectl config use-context mlops_kc
-                    kubectl create namespace teamA --dry-run=client -o yaml | kubectl apply -f -
+                    kubectl config use-context aks-uk-dev-app
+                    kubectl create namespace team-a --dry-run=client -o yaml | kubectl apply -f -
                     kubectl apply -f k8s/pvc.yaml
                     kubectl apply -f k8s/service.yaml
 
@@ -82,6 +82,19 @@ pipeline {
                 }
             }
         }
+        
+        stage('Rollback Deployment') {
+            when {
+                expression { params.ROLLBACK == true }
+            }
+            steps {
+                script {
+                    echo "Rolling back deployment to previous revision"
+                    sh "kubectl rollout undo deployment/todo-app -n team-a"
+                }
+            }
+        }
+
     }
 
     post {

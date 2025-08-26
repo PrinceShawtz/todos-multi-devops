@@ -2,11 +2,11 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: todo-pvc
-  namespace: teamA
+  namespace: team-a
 spec:
   accessModes:
     - ReadWriteOnce
   resources:
     requests:
       storage: 1Gi
-  storageClassName: default # or the name of your Azure Disk SC
+  storageClassName: azurefile # or the name of your Azure Disk SC

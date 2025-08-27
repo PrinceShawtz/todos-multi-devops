@@ -89,8 +89,9 @@ pipeline {
             }
             steps {
                 script {
-                    echo "Rolling back deployment to previous revision"
+                    echo "⏪ Rolling back deployment to previous revision..."
                     sh "kubectl rollout undo deployment/todo-app -n team-a"
+                    sh "kubectl rollout status deployment/todo-app -n team-a"
                 }
             }
         }

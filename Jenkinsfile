@@ -12,6 +12,14 @@ pipeline {
         SONARQUBE_SERVER = 'SonarQube'
     }
 
+    parameters {
+        booleanParam(
+            name: 'ROLLBACK',
+            defaultValue: false,
+            description: 'Set to true to rollback the AKS deployment to the previous version'
+        )
+    }
+
     stages {
         stage('Checkout') {
             steps {
@@ -21,32 +29,42 @@ pipeline {
 
         stage('Install Dependencies') {
             steps {
-                sh 'npm install'
+                dir('backend') {
+                    sh 'npm install'
+                }
             }
         }
 
         stage('Lint Code') {
             steps {
-                sh 'npx eslint . || true'
+                dir('backend') {
+                    sh 'npx eslint . || true'
+                }
             }
         }
 
         stage('Run Tests') {
             steps {
-                // Add tests later; placeholder for now
-                echo 'Running unit tests... (placeholder)'
-                // sh 'npm test || true'
+                dir('backend') {
+                    // Add tests later; placeholder for now
+                    echo 'Running unit tests... (placeholder)'
+                    // sh 'npm test || true'
+                }
             }
         }
 
         stage('Static Code Analysis') {
             steps {
-                withSonarQubeEnv("${env.SONARQUBE_SERVER}") {
-                    sh 'npx sonar-scanner \
-                        -Dsonar.projectKey=todo-app \
-                        -Dsonar.sources=. \
-                        -Dsonar.host.url=$SONAR_HOST_URL \
-                        -Dsonar.login=$SONAR_AUTH_TOKEN'
+                dir('backend') {
+                    withSonarQubeEnv("${env.SONARQUBE_SERVER}") {
+                        sh '''
+                            'npx sonar-scanner \
+                            -Dsonar.projectKey=todo-app \
+                            -Dsonar.sources=. \
+                            -Dsonar.host.url=$SONAR_HOST_URL \
+                            -Dsonar.login=$SONAR_AUTH_TOKEN'
+                        '''
+                    }
                 }
             }
         }
@@ -56,11 +74,13 @@ pipeline {
                 branch 'main'
             }
             steps {
-                script {
-                    def imageName = "princeshawtz/todo-app:${env.BUILD_NUMBER}"
-                    sh "docker build -t $imageName ."
-                    sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin"
-                    sh "docker push $imageName"
+                dir('backend') {
+                    script {
+                        def imageName = "princeshawtz/todo-app:${env.BUILD_NUMBER}"
+                        sh "docker build -t $imageName ."
+                        sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin"
+                        sh "docker push $imageName"
+                    }
                 }
             }
         }
@@ -70,7 +90,7 @@ pipeline {
                 branch 'main'
             }
             steps {
-                input message: 'Approve deployment to AKS?'
+                input message: '✅ Approve deployment to AKS?'
                 script {
                     def imageName = "princeshawtz/todo-app:${env.BUILD_NUMBER}"
 
@@ -94,8 +114,12 @@ pipeline {
             steps {
                 script {
                     echo "⏪ Rolling back deployment to previous revision..."
-                    sh "kubectl rollout undo deployment/todo-app -n team-a"
-                    sh "kubectl rollout status deployment/todo-app -n team-a"
+                    try {
+                        sh "kubectl rollout undo deployment/todo-app -n team-a"
+                        sh "kubectl rollout status deployment/todo-app -n team-a"
+                    } catch (err) {
+                        echo "⚠️ Rollback failed: ${err}"
+                    }
                 }
             }
         }
@@ -104,7 +128,7 @@ pipeline {
 
     post {
         always {
-            echo 'Pipeline execution complete.'
+            echo '🚦 Pipeline execution complete.'
         }
     }
 }

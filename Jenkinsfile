@@ -67,9 +67,20 @@ pipeline {
             }
         }
 
+        stage('Debug Branch Vars') {
+            steps {
+                script {
+                    echo "🔍 GIT_BRANCH: ${env.GIT_BRANCH}"
+                    echo "🔍 BRANCH_NAME: ${env.BRANCH_NAME}"
+                }
+            }
+        }
+
         stage('Build & Push Docker Image') {
             when {
-                branch 'main'
+                expression {
+                    env.GIT_BRANCH == 'refs/remotes/origin/main' && !params.ROLLBACK
+                }
             }
             steps {
                 dir('backend') {
@@ -85,7 +96,9 @@ pipeline {
 
         stage('Approval & Deploy to AKS') {
             when {
-                branch 'main'
+                expression {
+                    env.GIT_BRANCH == 'refs/remotes/origin/main' && !params.ROLLBACK
+                }
             }
             steps {
                 input message: '✅ Approve deployment to AKS?'

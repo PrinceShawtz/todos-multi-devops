@@ -56,14 +56,18 @@ pipeline {
         stage('Static Code Analysis') {
             steps {
                 dir('backend') {
-                    withSonarQubeEnv("${env.SONARQUBE_SERVER}") {
-                        sh '''
-                            './node_modules/.bin/sonar-scanner \
-                            -Dsonar.projectKey=todo-app \
-                            -Dsonar.sources=. \
-                            -Dsonar.host.url=$SONAR_HOST_URL \
-                            #-Dsonar.login=$SONAR_AUTH_TOKEN'
-                        '''
+                    script {
+                        // Get the SonarQube Scanner tool configured in Jenkins
+                        def sonarScanner = tool name: 'sonar-scanner-cli', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+                        withSonarQubeEnv("${env.SONARQUBE_SERVER}") {
+                            sh '''
+                                './node_modules/.bin/sonar-scanner \
+                                -Dsonar.projectKey=todo-app \
+                                -Dsonar.sources=. \
+                                -Dsonar.host.url=$SONAR_HOST_URL \
+                                #-Dsonar.login=$SONAR_AUTH_TOKEN'
+                            '''
+                        }
                     }
                 }
             }

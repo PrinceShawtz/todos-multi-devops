@@ -79,7 +79,7 @@ pipeline {
         stage('Build & Push Docker Image') {
             when {
                 expression {
-                    env.GIT_BRANCH == 'refs/remotes/origin/main' && !params.ROLLBACK
+                    env.GIT_BRANCH == 'origin/main' && !params.ROLLBACK
                 }
             }
             steps {
@@ -97,7 +97,7 @@ pipeline {
         stage('Approval & Deploy to AKS') {
             when {
                 expression {
-                    env.GIT_BRANCH == 'refs/remotes/origin/main' && !params.ROLLBACK
+                    env.GIT_BRANCH == 'origin/main' && !params.ROLLBACK
                 }
             }
             steps {

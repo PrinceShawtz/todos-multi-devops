@@ -58,7 +58,7 @@ pipeline {
                 dir('backend') {
                     withSonarQubeEnv("${env.SONARQUBE_SERVER}") {
                         sh '''
-                            'npx sonar-scanner \
+                            './node_modules/.bin/sonar-scanner \
                             -Dsonar.projectKey=todo-app \
                             -Dsonar.sources=. \
                             -Dsonar.host.url=$SONAR_HOST_URL \

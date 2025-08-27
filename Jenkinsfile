@@ -64,7 +64,7 @@ pipeline {
                                 "${sonarScanner}/bin/sonar-scanner \
                                 -Dsonar.projectKey=todo-app \
                                 -Dsonar.sources=. \
-                                -Dsonar.host.url=$SONAR_HOST_URL \
+                                -Dsonar.host.url=$SONAR_HOST_URL"
                             '''
                         }
                     }

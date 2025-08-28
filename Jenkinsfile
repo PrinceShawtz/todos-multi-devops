@@ -89,9 +89,11 @@ pipeline {
                         withCredentials([usernamePassword(credentialsId: 'dockerhub', 
                                                   usernameVariable: 'DOCKER_USERNAME', 
                                                   passwordVariable: 'DOCKER_PASSWORD')]) {
-                            sh "docker build -t $imageName ."
-                            sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin"
-                            sh "docker push $imageName"
+                            sh ''' 
+                            docker build -t $imageName .
+                            echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+                            docker push $imageName
+                            '''
                         }
                     }
                 }
@@ -111,15 +113,17 @@ pipeline {
                         def imageName = "princeshawtz/todo-app:${env.BUILD_NUMBER}"
 
                         sh """
-                        # Apply namespace
-                        kubectl --kubeconfig=$KUBECONFIG create namespace team-a --dry-run=client -o yaml | kubectl --kubeconfig=$KUBECONFIG apply -f -
+                        kubectl --kubeconfig=${KUBECONFIG} create namespace team-a --dry-run=client -o yaml | kubectl --kubeconfig=${KUBECONFIG} apply -f -
 
-                        # Apply PVC and service
-                        kubectl --kubeconfig=$KUBECONFIG apply -f k8s/pvc.yaml
-                        kubectl --kubeconfig=$KUBECONFIG apply -f k8s/service.yaml
+                        if ! kubectl --kubeconfig=${KUBECONFIG} get pvc todo-pvc -n team-a >/dev/null 2>&1; then
+                            kubectl --kubeconfig=${KUBECONFIG} apply -f k8s/pvc.yaml
+                        else
+                            echo "✅ PVC already exists, skipping..."
+                        fi
 
-                        # Apply deployment with image
-                        sed 's|IMAGE_TAG|$imageName|' k8s/deployment.yaml | kubectl --kubeconfig=$KUBECONFIG apply -f -
+                        kubectl --kubeconfig=${KUBECONFIG} apply -f k8s/service.yaml
+
+                        sed 's|IMAGE_TAG|${imageName}|' k8s/deployment.yaml | kubectl --kubeconfig=${KUBECONFIG} apply -f -
                         """
                     }
                 }
@@ -135,10 +139,10 @@ pipeline {
                     script {
                         echo "⏪ Rolling back deployment to previous revision..."
                         try {
-                            sh """
+                            sh '''
                             kubectl --kubeconfig=$KUBECONFIG rollout undo deployment/todo-app -n team-a
                             kubectl --kubeconfig=$KUBECONFIG rollout status deployment/todo-app -n team-a
-                            """
+                            '''
                         } catch (err) {
                             echo "⚠️ Rollback failed: ${err}"
                         }

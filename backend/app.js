@@ -1,17 +1,46 @@
 const express = require('express');
-const path = require('path'); // ✅ required to serve static files
 const app = express();
 const todoRoutes = require('./routes/todos');
 
 app.use(express.json());
 app.use('/api/todos', todoRoutes);
 
-// serve static files from /public
-app.use(express.static(path.join(__dirname, 'public')));
-
-// optional: explicitly serve index.html for root
+// Serve simple HTML directly
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.send(`
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <title>Todo App</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 2rem; }
+        h1 { color: #333; }
+        ul { list-style: none; padding: 0; }
+        li { padding: 0.5rem 0; border-bottom: 1px solid #ccc; }
+      </style>
+    </head>
+    <body>
+      <h1>Team A Todos</h1>
+      <ul id="todo-list"></ul>
+
+      <script>
+        fetch('/api/todos')
+          .then(response => response.json())
+          .then(todos => {
+            const list = document.getElementById('todo-list');
+            todos.forEach(todo => {
+              const li = document.createElement('li');
+              li.textContent = todo.title + (todo.completed ? ' ✅' : '');
+              list.appendChild(li);
+            });
+          })
+          .catch(err => {
+            console.error('Error fetching todos:', err);
+          });
+      </script>
+    </body>
+    </html>
+  `);
 });
 
 const PORT = process.env.PORT || 3000;

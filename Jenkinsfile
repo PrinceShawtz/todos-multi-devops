@@ -110,13 +110,13 @@ pipeline {
                     def imageName = "princeshawtz/todo-app:${env.BUILD_NUMBER}"
 
                     sh """
-                    kubectl config use-context aks-uk-dev-app
-                    kubectl create namespace team-a --dry-run=client -o yaml | kubectl apply -f -
-                    kubectl apply -f k8s/pvc.yaml
-                    kubectl apply -f k8s/service.yaml
+                    # Use explicit --context to avoid dependency on kubeconfig switching
+                    kubectl --context=aks-uk-dev-app create namespace team-a --dry-run=client -o yaml | kubectl --context=aks-uk-dev-app apply -f -
+                    kubectl --context=aks-uk-dev-app apply -f k8s/pvc.yaml
+                    kubectl --context=aks-uk-dev-app apply -f k8s/service.yaml
 
                     # Inject dynamic image tag into deployment
-                    sed 's|IMAGE_TAG|$imageName|' k8s/deployment.yaml | kubectl apply -f -
+                    sed 's|IMAGE_TAG|$imageName|' k8s/deployment.yaml | kubectl --context=aks-uk-dev-app apply -f -
                     """
                 }
             }
@@ -130,8 +130,10 @@ pipeline {
                 script {
                     echo "⏪ Rolling back deployment to previous revision..."
                     try {
-                        sh "kubectl rollout undo deployment/todo-app -n team-a"
-                        sh "kubectl rollout status deployment/todo-app -n team-a"
+                        sh """
+                        kubectl --context=aks-uk-dev-app rollout undo deployment/todo-app -n team-a
+                        kubectl --context=aks-uk-dev-app rollout status deployment/todo-app -n team-a
+                        """
                     } catch (err) {
                         echo "⚠️ Rollback failed: ${err}"
                     }

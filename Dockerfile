@@ -11,6 +11,8 @@ RUN npm install
 # Copy the rest of the app
 COPY . .
 
+COPY backend/ ./
+
 # Expose port (change to your app's port if needed)
 EXPOSE 3000
 

@@ -92,6 +92,7 @@ pipeline {
                         sh "docker build -t $imageName ."
                         sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin"
                         sh "docker push $imageName"
+                        }
                     }
                 }
             }

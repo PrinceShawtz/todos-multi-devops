@@ -114,8 +114,14 @@ pipeline {
                         # Apply namespace
                         kubectl --kubeconfig=$KUBECONFIG create namespace team-a --dry-run=client -o yaml | kubectl --kubeconfig=$KUBECONFIG apply -f -
 
-                        # Apply PVC and service
-                        kubectl --kubeconfig=$KUBECONFIG apply -f k8s/pvc.yaml
+                        # Apply PVC gracefully
+                        if ! kubectl --kubeconfig=${KUBECONFIG} get pvc todo-pvc -n team-a >/dev/null 2>&1; then
+                            kubectl --kubeconfig=${KUBECONFIG} apply -f k8s/pvc.yaml
+                        else
+                            echo "✅ PVC already exists, skipping..."
+                        fi
+
+                        # Apply service
                         kubectl --kubeconfig=$KUBECONFIG apply -f k8s/service.yaml
 
                         # Apply deployment with image

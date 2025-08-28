@@ -3,19 +3,33 @@
 <head>
   <title>Todo App</title>
   <style>
-    body {
-      background-color: lightblue; /* 🎨 change background here */
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 50px;
-    }
-    h1 {
-      color: white;
-    }
+    body { font-family: Arial, sans-serif; margin: 2em; }
+    ul { list-style: none; padding: 0; }
+    li { margin-bottom: 0.5em; }
+    .completed { text-decoration: line-through; color: gray; }
   </style>
 </head>
 <body>
-  <h1>Welcome to Todo App 🚀</h1>
-  <p>Use the API at <code>/api/todos</code></p>
+  <h1>Todo List</h1>
+  <ul id="todo-list">Loading...</ul>
+
+  <script>
+    fetch('/api/todos')
+      .then(response => response.json())
+      .then(todos => {
+        const list = document.getElementById('todo-list');
+        list.innerHTML = '';
+        todos.forEach(todo => {
+          const li = document.createElement('li');
+          li.textContent = todo.title;
+          if (todo.completed) li.classList.add('completed');
+          list.appendChild(li);
+        });
+      })
+      .catch(error => {
+        document.getElementById('todo-list').textContent = 'Failed to load todos.';
+        console.error(error);
+      });
+  </script>
 </body>
 </html>

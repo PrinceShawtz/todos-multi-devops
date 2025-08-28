@@ -106,18 +106,22 @@ pipeline {
             }
             steps {
                 input message: '✅ Approve deployment to AKS?'
-                script {
-                    def imageName = "princeshawtz/todo-app:${env.BUILD_NUMBER}"
+                withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
+                    script {
+                        def imageName = "princeshawtz/todo-app:${env.BUILD_NUMBER}"
 
-                    sh """
-                    # Use explicit --context to avoid dependency on kubeconfig switching
-                    kubectl --context=aks-uk-dev-app create namespace team-a --dry-run=client -o yaml | kubectl --context=aks-uk-dev-app apply -f -
-                    kubectl --context=aks-uk-dev-app apply -f k8s/pvc.yaml
-                    kubectl --context=aks-uk-dev-app apply -f k8s/service.yaml
+                        sh """
+                        # Apply namespace
+                        kubectl --kubeconfig=$KUBECONFIG create namespace team-a --dry-run=client -o yaml | kubectl --kubeconfig=$KUBECONFIG apply -f -
 
-                    # Inject dynamic image tag into deployment
-                    sed 's|IMAGE_TAG|$imageName|' k8s/deployment.yaml | kubectl --context=aks-uk-dev-app apply -f -
-                    """
+                        # Apply PVC and service
+                        kubectl --kubeconfig=$KUBECONFIG apply -f k8s/pvc.yaml
+                        kubectl --kubeconfig=$KUBECONFIG apply -f k8s/service.yaml
+
+                        # Apply deployment with image
+                        sed 's|IMAGE_TAG|$imageName|' k8s/deployment.yaml | kubectl --kubeconfig=$KUBECONFIG apply -f -
+                        """
+                    }
                 }
             }
         }
@@ -127,15 +131,17 @@ pipeline {
                 expression { params.ROLLBACK == true }
             }
             steps {
-                script {
-                    echo "⏪ Rolling back deployment to previous revision..."
-                    try {
-                        sh """
-                        kubectl --context=aks-uk-dev-app rollout undo deployment/todo-app -n team-a
-                        kubectl --context=aks-uk-dev-app rollout status deployment/todo-app -n team-a
-                        """
-                    } catch (err) {
-                        echo "⚠️ Rollback failed: ${err}"
+                withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
+                    script {
+                        echo "⏪ Rolling back deployment to previous revision..."
+                        try {
+                            sh """
+                            kubectl --kubeconfig=$KUBECONFIG rollout undo deployment/todo-app -n team-a
+                            kubectl --kubeconfig=$KUBECONFIG rollout status deployment/todo-app -n team-a
+                            """
+                        } catch (err) {
+                            echo "⚠️ Rollback failed: ${err}"
+                        }
                     }
                 }
             }

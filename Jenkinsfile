@@ -98,31 +98,6 @@ pipeline {
             }
         }
 
-        stage('Install Azure CLI') {
-            steps {
-                sh """
-                    curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-                """
-            }
-        }
-
-        stage('Login to Azure') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'aks-login',
-                                                 usernameVariable: 'AZURE_CLIENT_ID',
-                                                 passwordVariable: 'AZURE_CLIENT_SECRET')]) {
-                    script {
-                        sh """
-                        echo "Logging in to Azure..."
-                        az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant 2b32b1fa-7899-482e-a6de-be99c0ff5516
-                        az account show
-                        az aks get-credentials --resource-group rg-uk-dev-app --name aks-uk-dev-app --overwrite-existing
-                        """
-                    }
-                }
-            }
-        }
-
         stage('Approval & Deploy to AKS') {
             when {
                 expression {

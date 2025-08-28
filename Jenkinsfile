@@ -98,6 +98,14 @@ pipeline {
             }
         }
 
+        stage('Install Azure CLI') {
+            steps {
+                sh """
+                    curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+                """
+            }
+        }
+
         stage('Login to Azure') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'aks-login',

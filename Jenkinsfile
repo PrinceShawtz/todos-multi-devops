@@ -86,6 +86,9 @@ pipeline {
                 dir('backend') {
                     script {
                         def imageName = "princeshawtz/todo-app:${env.BUILD_NUMBER}"
+                        withCredentials([usernamePassword(credentialsId: 'dockerhub', 
+                                                  usernameVariable: 'DOCKER_USERNAME', 
+                                                  passwordVariable: 'DOCKER_PASSWORD')]) {
                         sh "docker build -t $imageName ."
                         sh "echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin"
                         sh "docker push $imageName"

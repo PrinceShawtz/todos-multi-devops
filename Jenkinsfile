@@ -81,11 +81,11 @@ pipeline {
         // ✅ This runs only for PR/dev branches (no deploy)
         stage('PR Validation') {
             when {
-                not { branch 'main' }
+                expression { env.CHANGE_ID != null } // means it's a PR build
             }
             steps {
-                echo "✅ Validation complete for branch: ${env.BRANCH_NAME}"
-                echo "⚠️ No deployment, only lint/tests/sonar."
+                echo "🔎 Running PR checks for PR #${env.CHANGE_ID} → Target: ${env.CHANGE_TARGET}"
+                echo "✅ Validation complete. No deploy on PR builds."
             }
         }
 

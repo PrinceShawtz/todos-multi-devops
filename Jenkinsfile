@@ -74,22 +74,38 @@ pipeline {
                 script {
                     echo "🔍 GIT_BRANCH: ${env.GIT_BRANCH}"
                     echo "🔍 BRANCH_NAME: ${env.BRANCH_NAME}"
+                    echo "🔍 CHANGE_ID: ${env.CHANGE_ID}"       // PR number (if PR build)
+                    echo "🔍 CHANGE_TARGET: ${env.CHANGE_TARGET}" // Target branch of PR
                 }
             }
         }
 
-        // ✅ This runs only for PR/dev branches (no deploy)
+        // ✅ PR Validation Stage (runs only for Pull Requests)
         stage('PR Validation') {
             when {
-                expression { env.CHANGE_ID != null } // means it's a PR build
+                expression { env.CHANGE_ID != null }
             }
             steps {
-                echo "🔎 Running PR checks for PR #${env.CHANGE_ID} → Target: ${env.CHANGE_TARGET}"
-                echo "✅ Validation complete. No deploy on PR builds."
+                echo "🔎 Running PR validation for PR #${env.CHANGE_ID} → Target: ${env.CHANGE_TARGET}"
+                echo "✅ PR checks passed. No Docker build/deploy for PR builds."
             }
         }
 
-        // ✅ Build & Push only on main
+        // ✅ Dev/feature branches (not main, not PR)
+        stage('Branch Validation') {
+            when {
+                allOf {
+                    not { branch 'main' }
+                    expression { env.CHANGE_ID == null }
+                }
+            }
+            steps {
+                echo "✅ CI completed for branch: ${env.BRANCH_NAME}"
+                echo "⚠️ No deployment for non-main branches."
+            }
+        }
+
+        // ✅ Build & Push Docker Image (only main branch)
         stage('Build & Push Docker Image') {
             when {
                 branch 'main'
@@ -110,7 +126,7 @@ pipeline {
             }
         }
 
-        // ✅ Deploy only on main
+        // ✅ Approval & Deploy to AKS (only main branch)
         stage('Approval & Deploy to AKS') {
             when {
                 branch 'main'
@@ -137,6 +153,7 @@ pipeline {
             }
         }
 
+        // ✅ Rollback option (manual)
         stage('Rollback Deployment') {
             when {
                 expression { params.ROLLBACK == true }

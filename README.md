@@ -1,2 +1,2 @@
 # todo-app-devops
-Team of 3 (team-A)
+Team of 3 (team-A) yes
